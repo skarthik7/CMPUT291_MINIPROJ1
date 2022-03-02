@@ -173,7 +173,7 @@ def query_test():
 
     connection.commit()
 
-def login_screen():
+def login_reg_screen():
 
     global connection, cursor
 
@@ -243,17 +243,17 @@ def login_screen():
 
                 else:
                     unique = True
-                        
-                   
-
-
-
-
 
                 
             name_input = input("Name: ")
             new_pw_input = input("password: ")
-            cursor.execute('''insert into customers values ('?', '?','?'); ''', (new_id_input,name_input,new_pw_input,)) 
+            try:
+                cursor.execute('''insert into customers values (?,?,?); ''', (new_id_input,name_input,new_pw_input,)) 
+                print("\nNew user account created.\nInserted to the table.\n")
+            except sqlite3.Error as e:
+                print(e)
+
+
 
 def main():
     global connection, cursor
@@ -263,9 +263,11 @@ def main():
     create_tables()
     read_data()
 
-    #query_test()
+    
 
-    login_screen()
+    login_reg_screen()
+
+    query_test()
 
 if __name__ == "__main__":
     main()
