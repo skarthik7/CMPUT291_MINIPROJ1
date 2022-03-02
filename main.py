@@ -1,5 +1,6 @@
 import sqlite3
 from venv import create
+import getpass
 
 
 connection = None
@@ -162,7 +163,7 @@ def query_test():
     
 
     try:
-        cursor.execute('SELECT * from customers') 
+        cursor.execute('SELECT * from editors') 
         data = cursor.fetchall()
         
     except sqlite3.Error as e:
@@ -187,7 +188,7 @@ def login_reg_screen():
         if run != 0 and id_input[0] not in ['c','e']:
             print("INVALID ID provided")
    
-    pw_input = input("Password: ")
+    pw_input = getpass.getpass("Password: ")
 
     if id_input[0] == 'c':
         cursor.execute('SELECT * from customers;') 
@@ -216,12 +217,15 @@ def login_reg_screen():
             print("CORRECT PASS")
         else:
             print('INCORRECT PASS')
+            print(data[0])
+            print(pw_input)
 
         connection.commit()
 
     else:
         print("\nCreating NEW account.\n")
-        if id_input[0] == 'c':
+        type_input = input("Customer or Editor (enter c/e): ")
+        if type_input== 'c':
 
             unique = False
 
@@ -230,12 +234,10 @@ def login_reg_screen():
             all_cids = []
             for dat in data:
                 all_cids.append(dat[0])
-            #print(data)
+            
             while unique is False:
                 new_id_input = input("cid: ")
-
-               
-                    
+    
                 if new_id_input in all_cids:
                     user_type = "EXISTING USER"
                     print("cid is not unique.")
@@ -243,12 +245,39 @@ def login_reg_screen():
 
                 else:
                     unique = True
-
                 
             name_input = input("Name: ")
-            new_pw_input = input("password: ")
+            new_pw_input = getpass.getpass("password: ")
             try:
                 cursor.execute('''insert into customers values (?,?,?); ''', (new_id_input,name_input,new_pw_input,)) 
+                print("\nNew user account created.\nInserted to the table.\n")
+            except sqlite3.Error as e:
+                print(e)
+
+        elif type_input == 'e':
+            unique = False
+
+            cursor.execute('SELECT * from editors;') 
+            data = cursor.fetchall()
+            all_eids = []
+            for dat in data:
+                all_eids.append(dat[0])
+
+            while unique is False:
+                new_id_input = input("eid: ")
+    
+                if new_id_input in all_eids:
+                    user_type = "EXISTING USER"
+                    print("eid is not unique.")
+                    unique = False
+
+                else:
+                    unique = True
+                
+            
+            new_pw_input = getpass.getpass("password: ")
+            try:
+                cursor.execute('''insert into editors values (?,?); ''', (new_id_input,new_pw_input,)) 
                 print("\nNew user account created.\nInserted to the table.\n")
             except sqlite3.Error as e:
                 print(e)
@@ -263,11 +292,11 @@ def main():
     create_tables()
     read_data()
 
-    
+    #query_test()
 
     login_reg_screen()
 
-    query_test()
+    #query_test()
 
 if __name__ == "__main__":
     main()
