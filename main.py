@@ -157,6 +157,20 @@ def read_data():
 
     print("SUCCESSFULLY INSERTED DATA")
 
+def query_test():
+    global connection, cursor
+    
+
+    try:
+        cursor.execute('SELECT * from customers') 
+        data = cursor.fetchall()
+        
+    except sqlite3.Error as e:
+        print(e)
+    
+    for i in range(len(data)):
+        print(data[i])
+
 def main():
     global connection, cursor
 
@@ -165,5 +179,11 @@ def main():
     create_tables()
     read_data()
 
+    query_test()
+
 if __name__ == "__main__":
     main()
+
+
+    # prj-test.db
+    # a2-test-data.db
