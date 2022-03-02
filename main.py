@@ -171,6 +171,54 @@ def query_test():
     for i in range(len(data)):
         print(data[i])
 
+
+def login_screen():
+
+    global connection, cursor
+
+    print("Hello!")
+
+    id_input = ' '
+    run = 0
+    while id_input[0] not in ['c','e']:
+        id_input = input("ID: ")
+        run+=1
+        if run != 0 and id_input[0] not in ['c','e']:
+            print("INVALID ID provided")
+   
+    pw_input = input("Password: ")
+
+    if id_input[0] == 'c':
+        cursor.execute('SELECT * from customers;') 
+        data = cursor.fetchall()
+    elif id_input[0] == 'e':
+        cursor.execute('SELECT * from editors;') 
+        data = cursor.fetchall()
+
+    for sublist in data:
+        if id_input == sublist[0]:
+            user_type = "EXISTING USER"
+            break
+        else:
+            user_type = "NEW USER"
+    print(user_type)
+    if user_type == "EXISTING USER":
+        if id_input[0] == 'e':
+            cursor.execute('SELECT pwd from editors WHERE eid = ?', (id_input,))
+            data = cursor.fetchone()
+        elif id_input[0] == 'c':
+            cursor.execute('SELECT pwd from customers WHERE cid = ?', (id_input,)) 
+            data = cursor.fetchone()
+
+
+        if data[0] == pw_input:
+            print("CORRECT PASS")
+        else:
+            print('INCORRECT PASS')
+    else:
+        # create acc
+        pass
+
 def main():
     global connection, cursor
 
@@ -179,7 +227,9 @@ def main():
     create_tables()
     read_data()
 
-    query_test()
+    #query_test()
+
+    login_screen()
 
 if __name__ == "__main__":
     main()
