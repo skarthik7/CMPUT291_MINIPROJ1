@@ -171,6 +171,7 @@ def query_test():
     for i in range(len(data)):
         print(data[i])
 
+    connection.commit()
 
 def login_screen():
 
@@ -215,9 +216,44 @@ def login_screen():
             print("CORRECT PASS")
         else:
             print('INCORRECT PASS')
+
+        connection.commit()
+
     else:
-        # create acc
-        pass
+        print("\nCreating NEW account.\n")
+        if id_input[0] == 'c':
+
+            unique = False
+
+            cursor.execute('SELECT * from customers;') 
+            data = cursor.fetchall()
+            all_cids = []
+            for dat in data:
+                all_cids.append(dat[0])
+            #print(data)
+            while unique is False:
+                new_id_input = input("cid: ")
+
+               
+                    
+                if new_id_input in all_cids:
+                    user_type = "EXISTING USER"
+                    print("cid is not unique.")
+                    unique = False
+
+                else:
+                    unique = True
+                        
+                   
+
+
+
+
+
+                
+            name_input = input("Name: ")
+            new_pw_input = input("password: ")
+            cursor.execute('''insert into customers values ('?', '?','?'); ''', (new_id_input,name_input,new_pw_input,)) 
 
 def main():
     global connection, cursor
