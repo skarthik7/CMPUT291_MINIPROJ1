@@ -1,7 +1,8 @@
 import sqlite3
 from venv import create
 import getpass
-
+import random
+from xxlimited import new
 
 connection = None
 cursor = None
@@ -222,6 +223,8 @@ def login_reg_screen():
 
         connection.commit()
 
+        return ["Successful", id_input]
+
     else:
         print("\nCreating NEW account.\n")
         type_input = input("Customer or Editor (enter c/e): ")
@@ -281,8 +284,66 @@ def login_reg_screen():
                 print("\nNew user account created.\nInserted to the table.\n")
             except sqlite3.Error as e:
                 print(e)
+    
+        return ["Successful", new_id_input]
 
+def customer_functionality(login_status):
 
+    global connection, cursor
+    cursor.execute('SELECT name from customers WHERE cid =? ;',(login_status[1],))
+
+    data = cursor.fetchone()
+
+    print("\nWelcome, {}!".format(data[0]))
+    connection.commit()
+
+    if login_status[0] == "Successful":
+
+        print("\nSELECT one OF THE FOLLOWING:")
+        print("1. Start a session")
+        print("2. Search for movies")
+        print("3. End watching a movie")
+        print("4. End the session")
+        
+        option = 0
+
+        while option not in [1,2,3,4]:
+            option = int(input("\nOption: "))
+            if option not in [1,2,3,4]:
+                print("INVALID OPTION. Re-enter below.\n")
+
+        print("USER {} SELECTED OPTION {}".format(login_status[1],option))
+        if option == 1:
+            # new session
+            cursor.execute('SELECT sid from sessions;')
+            data = cursor.fetchall()
+            sids = []
+            for sid in data:
+                sids.append(sid[0])
+            
+            sids.sort()
+            
+            first_sid = sids[0]
+            last_sid = sids[len(sids)-1]+100
+
+            
+
+            new_random_sid = random.randint(first_sid,last_sid)
+
+            while new_random_sid in sids:
+                new_random_sid = random.randint(first_sid,last_sid)
+
+            print(new_random_sid)
+            date = '2021-08-10'
+            cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,login_status[1],date))
+            connection.commit()
+
+        elif option == 2:
+            pass
+        elif option == 3:
+            pass
+        elif option == 4:
+            pass
 
 def main():
     global connection, cursor
@@ -294,7 +355,10 @@ def main():
 
     #query_test()
 
-    login_reg_screen()
+    # login_status = login_reg_screen()
+    
+    # customer_functionality(login_status)
+    customer_functionality(["Successful",'c950'])
 
     #query_test()
 
