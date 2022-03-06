@@ -2,8 +2,7 @@ import sqlite3
 from venv import create
 import getpass
 import random
-from xxlimited import new
-
+from datetime import date
 connection = None
 cursor = None
 
@@ -334,12 +333,39 @@ def customer_functionality(login_status):
                 new_random_sid = random.randint(first_sid,last_sid)
 
             print(new_random_sid)
-            date = '2021-08-10'
-            cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,login_status[1],date))
+            todays_date = date.today()
+
+            cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,login_status[1],todays_date))
             connection.commit()
 
         elif option == 2:
-            pass
+            # search for movie based on keyword
+            number_of_keywords = int(input("Number of keywords: "))
+            # keyword = input("Keywords: ")
+            keywords = []
+            for word in range(number_of_keywords):
+                new_word = input("Keywords: ")
+                keywords.append(new_word)
+            # Shawshank Red Varun Dhawan
+
+            print(keywords)
+            
+            result = []
+            data1 = []
+            data2 = []
+            data3 = []
+            for keyword in keywords:
+                n_keyword = '%{}%'.format(keyword)
+                cursor.execute('SELECT title from movies WHERE title like ?  ;',(n_keyword,))
+                data1.append(cursor.fetchall())
+                cursor.execute('SELECT name from moviePeople WHERE name like ? ;',(n_keyword,))
+                data2.append(cursor.fetchall())
+                cursor.execute('SELECT role from casts WHERE role like ? ;',(n_keyword,))
+                data3.append(cursor.fetchall())
+                
+            print(data1)
+            print(data2)
+            print(data3)
         elif option == 3:
             pass
         elif option == 4:
