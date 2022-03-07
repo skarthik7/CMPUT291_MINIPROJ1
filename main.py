@@ -348,7 +348,10 @@ def customer_functionality(login_status):
                 keywords.append(new_word)
             # Shawshank Red Varun Dhawan
 
-            print(keywords)
+            print("\nKEYWORDS entered:\n")
+            for k in keywords:
+                print(k)
+            print('\n')
             
             result = []
             data1 = []
@@ -356,20 +359,160 @@ def customer_functionality(login_status):
             data3 = []
             for keyword in keywords:
                 n_keyword = '%{}%'.format(keyword)
-                cursor.execute('SELECT title from movies WHERE title like ?  ;',(n_keyword,))
+                cursor.execute('SELECT title, year, runtime from movies WHERE title like ?  ;',(n_keyword,))
                 data1.append(cursor.fetchall())
-                cursor.execute('SELECT name from moviePeople WHERE name like ? ;',(n_keyword,))
-                data2.append(cursor.fetchall())
-                cursor.execute('SELECT role from casts WHERE role like ? ;',(n_keyword,))
-                data3.append(cursor.fetchall())
                 
-            print(data1)
-            print(data2)
-            print(data3)
+                cursor.execute('SELECT m.title, m.year, m.runtime from movies m, casts c, moviePeople mp WHERE ((c.role like ? OR mp.name like ?) AND (c.pid = mp.pid AND m.mid = c.mid));',(n_keyword,n_keyword,))
+                data2.append(cursor.fetchall())
+
+                # cursor.execute('SELECT m.title from movies m, moviePeople p WHERE m.mid = p.mid AND name like ? ;',(n_keyword,))
+                # data2.append(cursor.fetchall())
+
+            # print(data1)
+            # print(data2)
+            # print(data3)
+            
+
+            results = []
+            # print(data1)
+            # print(data2)
+            for dat1 in data1:
+                for da1 in dat1:
+                    
+                    if da1 is not []:
+                        results.append(da1)
+            for dat2 in data2:
+                for da2 in dat2:
+                    
+                    if da2 is not []:
+                        results.append(da2)
+            
+            # for dat3 in data3:
+            #     for da3 in dat3:
+            #         for d3 in da3:
+            #             if d3 is not []:
+            #                 results.append(d3)
+            
+            #print(results)
+            number = 1
+            output = 0
+            
+            
+            if len(results) <= 5:
+                for result in results:
+                    print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
+                    number += 1
+                more = False
+            else:
+                new_results = results[0:5]
+                five = 5
+                
+                for result in new_results:
+                    print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
+                    number += 1
+                    output += 1
+                more = True
+            serial = 6
+            end = False
+            while output < len(results):
+                next_option= input("\nSelect a movie (1-{}) or more (m): ".format(serial-1))
+                if next_option.lower() == 'm':
+                    if more is False:
+                        print("\nNo more movies available.")
+                    elif more is True:
+                        new_results = results[five:five+5]
+                        five+=5
+                        number = 1
+                        for result in new_results:
+                            print("{}. {}, {}, {}".format(serial,result[0],result[1],result[2]))
+                            number += 1
+                            serial += 1
+                elif type(option) is int:
+                    if int(next_option) in range (1,int(next_option)+1):
+                        print("Selected movie name is {}".format(results[int(next_option)-1][0]))
+                        details(results[int(next_option)-1][0],login_status[1])
+                        end = True
+                    else:
+                        print("Invalid.")
+                        
+            
+                output+=5
+            if end is not True:
+                print("\nDisplayed ALL movies corresponding to keyword provided.")
+                next_option= int(input("\nSelect a movie (1-{}): ".format(serial-1)))
+                
+                if next_option in range (1,next_option+1):
+                    print("Selected movie name is {}".format(results[next_option-1][0]))
+                    details(results[next_option-1][0],login_status[1])
+                    end = True
+                else:
+                    print("Invalid.")
+                
+                
+                
+                
+                
+            
+            # dwayne p500 works
+            # morgan p100 lucy issue
+            
         elif option == 3:
             pass
         elif option == 4:
             pass
+def details(movie_name,cust_id):
+
+    # print("details func.")
+    # print(movie_name)
+
+    global connection, cursor
+
+
+    cursor.execute('''SELECT mp.name FROM movies m, moviePeople mp, casts c WHERE mp.pid = c.pid AND m.mid = c.mid AND m.title = ?;''',(movie_name,))
+
+    data1 = cursor.fetchall()
+    print("\nThe cast members in {} are: ".format(movie_name))
+    cast_member_serial = 1
+    for cm in data1:
+        print('{}. {}'.format(cast_member_serial, cm[0]))
+        cast_member_serial += 1
+    #print(data)
+    print('\n')
+    cursor.execute('''SELECT COUNT(c.cid) FROM customers c, watch w, movies m WHERE c.cid = w.cid AND m.mid = w.mid AND m.title = ?''',(movie_name,))
+    data2 = cursor.fetchall()
+    print("The number of customers who watched this movie is: {}\n".format(data2[0][0]))
+
+    print("1. Select a cast member and follow them.")
+    print("2. Start watching the movie.")
+
+    choice = int(input("Choice: "))
+    if choice == 1:
+        cast_member_choice = int(input("Cast member choice:"))
+        # print(data1[cast_member_choice-1][0])
+        # print(cust_id)
+
+        cursor.execute('''SELECT pid from moviePeople where name = ?''',(data1[cast_member_choice-1][0],))
+
+        mp_pid = cursor.fetchall()
+
+        # cursor.execute('''INSERT into follows values ?, ?;''',(cust_id,mp_pid,))
+        try:
+            #cursor.execute("INSERT INTO follows (cid, pid) VALUES "+ "({}, {});".format(str(cust_id),mp_pid[0][0]))
+            cursor.execute("""
+                    INSERT INTO follows(cid,pid)
+                    VALUES (?,?)
+            """, (cust_id,mp_pid[0][0]))
+            print("You have followed {}.".format(data1[cast_member_choice-1][0]))
+
+        except sqlite3.Error as e:
+            print("You already follow {},".format(data1[cast_member_choice-1][0]))
+    elif choice == 2:
+        
+    
+
+        connection.commit()
+
+
 
 def main():
     global connection, cursor
@@ -394,3 +537,4 @@ if __name__ == "__main__":
 
     # prj-test.db
     # a2-test-data.db
+    
