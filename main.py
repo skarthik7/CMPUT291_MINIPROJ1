@@ -215,14 +215,16 @@ def login_reg_screen():
 
         if data[0] == pw_input:
             print("CORRECT PASS")
+            return ["Successful", id_input]
+
         else:
             print('INCORRECT PASS')
-            print(data[0])
-            print(pw_input)
-
+            # print(data[0])
+            # print(pw_input)
+            return ["Not Successful", id_input]
         connection.commit()
 
-        return ["Successful", id_input]
+        
 
     else:
         print("\nCreating NEW account.\n")
@@ -298,170 +300,171 @@ def customer_functionality(login_status):
 
     if login_status[0] == "Successful":
 
-        print("\nSELECT one OF THE FOLLOWING:")
-        print("1. Start a session")
-        print("2. Search for movies")
-        print("3. End watching a movie")
-        print("4. End the session")
         
-        option = 0
 
-        while option not in [1,2,3,4]:
+        
+
+        option = 0
+        while option != 5:
+            print("\nSELECT one OF THE FOLLOWING:")
+            print("1. Start a session")
+            print("2. Search for movies")
+            print("3. End watching a movie")
+            print("4. End the session")
+            print("5. Exit;")
             option = int(input("\nOption: "))
-            if option not in [1,2,3,4]:
+    
+        #print("USER {} SELECTED OPTION {}".format(login_status[1],option))
+            if option == 1:
+                start_session(login_status[1])
+                
+            elif option == 2:
+                search_movies(login_status[1],option)
+                
+            elif option == 3:
+                pass
+            elif option == 4:
+                pass
+            elif option == 5:
+                print("Thank you for using our system.")
+            else:
                 print("INVALID OPTION. Re-enter below.\n")
 
-        print("USER {} SELECTED OPTION {}".format(login_status[1],option))
-        if option == 1:
-            # new session
-            cursor.execute('SELECT sid from sessions;')
-            data = cursor.fetchall()
-            sids = []
-            for sid in data:
-                sids.append(sid[0])
+def start_session(cid):
+
+    # OPTION 1
+    global connection, cursor
+
+    # new session
+    cursor.execute('SELECT sid from sessions;')
+    data = cursor.fetchall()
+    sids = []
+    for sid in data:
+        sids.append(sid[0])
+    
+    sids.sort()
+    
+    first_sid = sids[0]
+    last_sid = sids[len(sids)-1]+100
+
+
+    new_random_sid = random.randint(first_sid,last_sid)
+
+    while new_random_sid in sids:
+        new_random_sid = random.randint(first_sid,last_sid)
+
+    print("New Randomly generated SID is", new_random_sid,".\n")
+    todays_date = date.today()
+
+    cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,cid,todays_date))
+    connection.commit()
+
+    return
+
+def search_movies(cid,option):
+    # search for movie based on keyword
+    number_of_keywords = int(input("Number of keywords: "))
+    # keyword = input("Keywords: ")
+    keywords = []
+    for word in range(number_of_keywords):
+        new_word = input("Keywords: ")
+        keywords.append(new_word)
+    # Shawshank Red Varun Dhawan
+
+    print("\nKEYWORDS entered:\n")
+    for k in keywords:
+        print(k)
+    print('\n')
+    
+    result = []
+    data1 = []
+    data2 = []
+  
+    for keyword in keywords:
+        n_keyword = '%{}%'.format(keyword)
+        cursor.execute('SELECT title, year, runtime from movies WHERE title like ?  ;',(n_keyword,))
+        data1.append(cursor.fetchall())
+        
+        cursor.execute('SELECT m.title, m.year, m.runtime from movies m, casts c, moviePeople mp WHERE ((c.role like ? OR mp.name like ?) AND (c.pid = mp.pid AND m.mid = c.mid));',(n_keyword,n_keyword,))
+        data2.append(cursor.fetchall())
+
+
+    results = []
+    # print(data1)
+    # print(data2)
+    for dat1 in data1:
+        for da1 in dat1:
             
-            sids.sort()
+            if da1 is not []:
+                results.append(da1)
+    for dat2 in data2:
+        for da2 in dat2:
             
-            first_sid = sids[0]
-            last_sid = sids[len(sids)-1]+100
+            if da2 is not []:
+                results.append(da2)
 
-            
-
-            new_random_sid = random.randint(first_sid,last_sid)
-
-            while new_random_sid in sids:
-                new_random_sid = random.randint(first_sid,last_sid)
-
-            print(new_random_sid)
-            todays_date = date.today()
-
-            cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,login_status[1],todays_date))
-            connection.commit()
-
-        elif option == 2:
-            # search for movie based on keyword
-            number_of_keywords = int(input("Number of keywords: "))
-            # keyword = input("Keywords: ")
-            keywords = []
-            for word in range(number_of_keywords):
-                new_word = input("Keywords: ")
-                keywords.append(new_word)
-            # Shawshank Red Varun Dhawan
-
-            print("\nKEYWORDS entered:\n")
-            for k in keywords:
-                print(k)
-            print('\n')
-            
-            result = []
-            data1 = []
-            data2 = []
-            data3 = []
-            for keyword in keywords:
-                n_keyword = '%{}%'.format(keyword)
-                cursor.execute('SELECT title, year, runtime from movies WHERE title like ?  ;',(n_keyword,))
-                data1.append(cursor.fetchall())
-                
-                cursor.execute('SELECT m.title, m.year, m.runtime from movies m, casts c, moviePeople mp WHERE ((c.role like ? OR mp.name like ?) AND (c.pid = mp.pid AND m.mid = c.mid));',(n_keyword,n_keyword,))
-                data2.append(cursor.fetchall())
-
-                # cursor.execute('SELECT m.title from movies m, moviePeople p WHERE m.mid = p.mid AND name like ? ;',(n_keyword,))
-                # data2.append(cursor.fetchall())
-
-            # print(data1)
-            # print(data2)
-            # print(data3)
-            
-
-            results = []
-            # print(data1)
-            # print(data2)
-            for dat1 in data1:
-                for da1 in dat1:
-                    
-                    if da1 is not []:
-                        results.append(da1)
-            for dat2 in data2:
-                for da2 in dat2:
-                    
-                    if da2 is not []:
-                        results.append(da2)
-            
-            # for dat3 in data3:
-            #     for da3 in dat3:
-            #         for d3 in da3:
-            #             if d3 is not []:
-            #                 results.append(d3)
-            
-            #print(results)
-            number = 1
-            output = 0
-            
-            
-            if len(results) <= 5:
-                for result in results:
-                    print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
-                    number += 1
-                more = False
-            else:
-                new_results = results[0:5]
-                five = 5
-                
+    number = 1
+    output = 0
+    
+    
+    if len(results) <= 5:
+        for result in results:
+            print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
+            number += 1
+        more = False
+    else:
+        new_results = results[0:5]
+        five = 5
+        
+        for result in new_results:
+            print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
+            number += 1
+            output += 1
+        more = True
+    serial = 6
+    end = False
+    while output < len(results):
+        next_option= input("\nSelect a movie (1-{}) or more (m): ".format(serial-1))
+        if next_option.lower() == 'm':
+            if more is False:
+                print("\nNo more movies available.")
+            elif more is True:
+                new_results = results[five:five+5]
+                five+=5
+                number = 1
                 for result in new_results:
-                    print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
+                    print("{}. {}, {}, {}".format(serial,result[0],result[1],result[2]))
                     number += 1
-                    output += 1
-                more = True
-            serial = 6
-            end = False
-            while output < len(results):
-                next_option= input("\nSelect a movie (1-{}) or more (m): ".format(serial-1))
-                if next_option.lower() == 'm':
-                    if more is False:
-                        print("\nNo more movies available.")
-                    elif more is True:
-                        new_results = results[five:five+5]
-                        five+=5
-                        number = 1
-                        for result in new_results:
-                            print("{}. {}, {}, {}".format(serial,result[0],result[1],result[2]))
-                            number += 1
-                            serial += 1
-                elif type(option) is int:
-                    if int(next_option) in range (1,int(next_option)+1):
-                        print("Selected movie name is {}".format(results[int(next_option)-1][0]))
-                        details(results[int(next_option)-1][0],login_status[1])
-                        end = True
-                    else:
-                        print("Invalid.")
-                        
-            
-                output+=5
-            if end is not True:
-                print("\nDisplayed ALL movies corresponding to keyword provided.")
-                next_option= int(input("\nSelect a movie (1-{}): ".format(serial-1)))
+                    serial += 1
+        elif type(option) is int:
+            if int(next_option) in range (1,int(next_option)+1):
+                print("Selected movie name is {}".format(results[int(next_option)-1][0]))
+                details(results[int(next_option)-1][0],cid)
+                end = True
+            else:
+                print("Invalid.")
                 
-                if next_option in range (1,next_option+1):
-                    print("Selected movie name is {}".format(results[next_option-1][0]))
-                    details(results[next_option-1][0],login_status[1])
-                    end = True
-                else:
-                    print("Invalid.")
-                
-                
-                
-                
-                
-            
-            # dwayne p500 works
-            # morgan p100 lucy issue
-            
-        elif option == 3:
-            pass
-        elif option == 4:
-            pass
-def details(movie_name,cust_id):
+    
+        output+=5
+    if end is not True:
+        print("\nDisplayed ALL movies corresponding to keyword provided.")
+        next_option= int(input("\nSelect a movie (1-{}): ".format(serial-1)))
+        
+        if next_option in range (1,next_option+1):
+            print("Selected movie name is {}".format(results[next_option-1][0]))
+            details(results[next_option-1][0],cid)
+            end = True
+        else:
+            print("Invalid.")
+        
+        
+        
 
+    # dwayne p500 works
+    # morgan p100 lucy issue
+
+def details(movie_name,cust_id):
+    # OPTION 2 contd. PT 2
     # print("details func.")
     # print(movie_name)
 
@@ -505,13 +508,13 @@ def details(movie_name,cust_id):
             print("You have followed {}.".format(data1[cast_member_choice-1][0]))
 
         except sqlite3.Error as e:
-            print("You already follow {},".format(data1[cast_member_choice-1][0]))
+            print("You already follow {}.".format(data1[cast_member_choice-1][0]))
+    
     elif choice == 2:
-        
+        print("\nYou chose to watch the movie {}.".format(movie_name))
     
 
         connection.commit()
-
 
 
 def main():
@@ -524,11 +527,11 @@ def main():
 
     #query_test()
 
-    # login_status = login_reg_screen()
+    login_status = login_reg_screen()
+    if login_status[0] == "Successful":
+        customer_functionality(login_status)
+    # customer_functionality(["Successful",'c950'])
     
-    # customer_functionality(login_status)
-    customer_functionality(["Successful",'c950'])
-
     #query_test()
 
 if __name__ == "__main__":
@@ -537,4 +540,3 @@ if __name__ == "__main__":
 
     # prj-test.db
     # a2-test-data.db
-    
