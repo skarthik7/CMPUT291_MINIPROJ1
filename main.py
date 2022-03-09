@@ -347,33 +347,28 @@ def editor_functionality(login_status):
             print("Selected to update a recommendation.")
             user_input = input("Select monthly, yearly or all time report (m/y/a):")
             if user_input.lower() == 'm':
-                cursor.execute('''SELECT t1.m1, t1.m2, COUNT(*)
-                                    FROM(
-                                    (
-                                    SELECT w1.mid as m1, w2.mid as m2, strftime('%m', s1.sdate) as month
-                                    FROM sessions s1, sessions s2, watch w1, watch w2
-                                    WHERE strftime('%m', s1.sdate) = strftime('%m', s2.sdate)
-                                    AND s1.cid = s2.cid
-                                    AND w1.sid = s1.sid
-                                    AND w2.sid = s2.sid
-                                    AND s1.sid < s2.sid
-                                    AND w1.mid != w2.mid -- <
-                                    ) t1
-                                    JOIN
-                                    (
-                                    SELECT r1.watched as watch, r1.recommended as recommend
-                                    FROM recommendations r1
-                                    GROUP BY watch
-                                    ) t2 ON (t2.watch = t1.m1 AND t2.recommend = t1.m2))
-                                    GROUP BY t1.month
-                                    ORDER BY COUNT(*) DESC;
+                cursor.execute('''SELECT w1.mid as m1, w2.mid as m2, COUNT(), strftime('%m', s1.sdate) as month
+                                FROM sessions s1, sessions s2, watch w1, watch w2
+                                WHERE strftime('%m', s1.sdate) = strftime('%m', s2.sdate)
+                                AND s1.cid = s2.cid
+                                AND w1.sid = s1.sid
+                                AND w2.sid = s2.sid
+                                AND s1.sid < s2.sid
+                                AND w1.mid != w2.mid -- <
+                                GROUP BY strftime('%m', s1.sdate), m1, m2
+                                ORDER BY COUNT() DESC;
                                 ''')
-                
+
                 data = cursor.fetchall()
+                #print(data)
+                #print(len(data))
+                
+                
                 unique_data(data)
                 
             elif user_input.lower() == 'y':
-                cursor.execute('''SELECT w1.mid as m1, w2.mid as m2, strftime('%Y', s1.sdate) as month, COUNT(*)
+                cursor.execute('''
+                                 SELECT w1.mid as m1, w2.mid as m2, COUNT(), strftime('%Y', s1.sdate) as month
                                 FROM sessions s1, sessions s2, watch w1, watch w2
                                 WHERE strftime('%Y', s1.sdate) = strftime('%Y', s2.sdate)
                                 AND s1.cid = s2.cid
@@ -382,14 +377,39 @@ def editor_functionality(login_status):
                                 AND s1.sid < s2.sid
                                 AND w1.mid != w2.mid -- <
                                 GROUP BY strftime('%Y', s1.sdate), m1, m2
-                                ORDER BY COUNT(*) DESC;
+                                ORDER BY COUNT() DESC;
                                 ''')
+
                 data = cursor.fetchall()
+                #print(len(data))
                 unique_data(data)
 
             elif user_input.lower() == 'a':
-                pass
+                cursor.execute('''
+                                SELECT w1.mid as m1, w2.mid as m2, COUNT()
+                                FROM sessions s1, sessions s2, watch w1, watch w2, recommendations r
+                                WHERE s1.cid = s2.cid
+                                AND w1.sid = s1.sid
+                                AND w2.sid = s2.sid
+                                AND s1.sid < s2.sid
+                                AND w1.mid != w2.mid -- <
+                                GROUP BY m1, m2
+                                ORDER BY COUNT() DESC;
+                                ''')
+                data = cursor.fetchall()
+                unique_data(data)
             
+        elif option == 3:
+            print("Thank you for using our system.\n")
+            
+            #TODO: clear lists and variable defined intially
+            print("Logging out......\n\n")
+            login_status = ()
+            main()
+        elif option == 4:
+            print("\nGoodbye!\n")
+            exit()
+
         else:
             pass
 
@@ -400,18 +420,60 @@ def unique_data(data):
     final_data = []
     for dat in data:
         if (dat[0],dat[1]) not in final_data and (dat[1],dat[0]) not in final_data :
-            final_data.append((dat[0],dat[1]))
-    print(final_data)
-    print(len(final_data))
+            final_data.append((dat[0],dat[1],dat[2]))
+    #print(final_data)
     
+    for num in range(len(final_data)):
+        #tuple_movie = (final_data[num][0],final_data[num][1])
+        cursor.execute('''SELECT r.score from recommendations r WHERE r.watched =? AND r.recommended =?;''',(final_data[num][0],final_data[num][1],))
+        data = cursor.fetchone()
+        
+        if data == None:
+            type_sr = "NOT IN RECOMMENDED"
+            score = 'None'
+        else:
+            type_sr = "IN RECOMMENDED"
+            score = data[0]
+        big_string = "{} / {}".format(final_data[num][0],final_data[num][1])
+        print(num+1,". ",big_string," ||", final_data[num][2],"have watched. || score =", score, "||", type_sr)
+        
+    print(len(final_data)," records printed.\n\n")
+
+    options = """\nChoose:\n(1) Add it to the recommended list (if not there already) or update its score,\n(2) Delete a pair from the recommended list.
+                """
+    print(options)
+
+    op = 0
+    while op not in [1,2]:
+        op = int(input("Select an option:"))
+
+        if op == 1:
+            insert_pair = int(input("Which pair do you want to insert? "))
+            movie_one = final_data[insert_pair-1][0]
+            movie_two = final_data[insert_pair-1][1]
+            try:
+                cursor.execute('''insert into recommendations values (?,?,NULL) ''', (movie_one,movie_two,))
+                connection.commit()
+                print("Inserted Successfully!\n\n")
+            except:
+                print("\nData already in RECOMMENDED.\n")
+
+        elif op == 2:
+            delete_pair = int(input("Which pair do you want to delete? "))
+            movie_one = final_data[delete_pair-1][0]
+            movie_two = final_data[delete_pair-1][1]
+            cursor.execute('''DELETE from recommendations WHERE watched = ? AND recommended = ? ''', (movie_one,movie_two,))
+            connection.commit()
+            print("Deleted Successfully!\n\n")
+# 74 .  220 / 130  || 1 have watched. || score = None || NOT IN RECOMMENDED
 def customer_functionality(login_status):
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
     global session_list
     global connection, cursor
   
-    
-    
+    # 100 / 120  || 18 have watched. || score = 0.6 || IN RECOMMENDED
+    # 44 .  90 / 130  || 1 have watched. || score = 0.5 || IN RECOMMENDED
     cursor.execute('SELECT name from customers WHERE cid =? ;',(login_status[1],))
 
     data = cursor.fetchone()
@@ -474,7 +536,8 @@ def customer_functionality(login_status):
                 login_status = ()
                 main()
             elif option == 6:
-                pass
+                print("\nGoodbye!\n")
+                exit()
             else:
                 print("INVALID OPTION. Re-enter below.\n")
 
