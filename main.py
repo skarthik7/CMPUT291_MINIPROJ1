@@ -1,3 +1,5 @@
+#TODO: String matching. 
+
 import sqlite3
 from tkinter import N
 from venv import create
@@ -9,6 +11,7 @@ import time
 time_dict = {} # cid as key, start time.time() as value
 session_list = [] #sid, start time
 movies_currently_being_watched_withStartTime_list = [] # each ele is of form (movie_name, start_time, sid)
+
 
 connection = None
 cursor = None
@@ -196,8 +199,7 @@ def login_reg_screen():
         if run != 0 and id_input[0] not in ['c','e']:
             print("INVALID ID provided")
    
-    pw_input = getpass.getpass("Password: ")
-
+    
     if id_input[0] == 'c':
         cursor.execute('SELECT * from customers;') 
         data = cursor.fetchall()
@@ -213,27 +215,36 @@ def login_reg_screen():
             user_type = "NEW USER"
     print(user_type)
     if user_type == "EXISTING USER":
+        
         if id_input[0] == 'e':
             cursor.execute('SELECT pwd from editors WHERE eid = ?', (id_input,))
             data = cursor.fetchone()
+
         elif id_input[0] == 'c':
             cursor.execute('SELECT pwd from customers WHERE cid = ?', (id_input,)) 
             data = cursor.fetchone()
-
-
-        if data[0] == pw_input:
-            print("CORRECT PASSWORD")
-            #print("H#")
-            return ["Successful", id_input]
-
-        else:
-            print('INCORRECT PASS')
-            # print(data[0])
-            # print(pw_input)
-            return ["Not Successful", id_input]
-        connection.commit()
-
+        correct = False
+        incorrect_tries = 0
+        while correct is False:
+            pw_input = getpass.getpass("Password: ")
         
+            if data[0] == pw_input:
+                print("CORRECT PASSWORD")
+                #print("H#")
+                correct = True
+                #print(id_input)
+                return ["Successful", id_input]
+
+            else:
+                print('INCORRECT PASSWORD. {} tries remaining.'.format(2-incorrect_tries))
+                # print(data[0])
+                # print(pw_input)
+                incorrect_tries += 1
+                if incorrect_tries == 3:
+                    print("\nLogin failed.\n")
+                    #print(new_id_input)
+                    return ["Not Successful", id_input]
+            connection.commit()
 
     else:
         print("\nCreating NEW account.\n")
@@ -294,7 +305,7 @@ def login_reg_screen():
                 print("\nNew user account created.\nInserted to the table.\n")
             except sqlite3.Error as e:
                 print(e)
-    
+        
         return ["Successful", new_id_input]
 
 def end_movie(type_end):
@@ -380,11 +391,69 @@ def end_movie(type_end):
             movies_currently_being_watched_withStartTime_list.pop(end_movie_option_input)
         print("\nEnded all movies.\n")
 
+def editor_functionality(login_status):
+    global connection, cursor
+
+    print("\nWelcome, editor {}!".format(login_status[1]))
+
+    option = 0
+    while option != 4:
+        print("SELECT one OF THE FOLLOWING:")
+        print("1. Add a movie")
+        print("2. Update a recommendation")
+        print("3. Logout;")
+        print("4. Exit;")
+        option = int(input("\nOption: "))
+
+        if option == 1:
+            print("Selected to add a movie.")
+            cursor.execute('''SELECT mid from movies;''')
+            data = cursor.fetchall()
+            
+            movies = []
+
+            for m in data:
+                movies.append(m[0])
+
+            # unique movie id, a title, a year, a runtime and a list of cast members and their roles.
+            movie_id = int(input("Movie id:"))
+            if movie_id not in movies:
+                title = input("Title: ")
+                year = int(input("Year: "))
+                runtime = int(input("Runtime: "))
+
+
+                cursor.execute('''insert into movies values (?,?,?,?); ''', (movie_id,title,year,runtime,))
+                connection.commit()
+                print("\nMovie inserted.\n")
+
+
+                # MOVIE INSERTED, NOW CAST MEMBERS INSERTION
+
+                
+
+                no_of_cast_membets = int(input("How many cast members? "))
+
+                for i in range(1,no_of_cast_membets+1):
+                    cast_member_id = input("pid: ")
+                    cursor.execute('''SELECT name, birthYear from moviePeople where pid = ?''',(cast_member_id))
+            else:
+                print("\nMovie ID not unique.\n")
+        elif option == 2:
+            print("Selected to update a recommendation.")
+        else:
+            bre
+
+    return
+
 def customer_functionality(login_status):
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
     global session_list
     global connection, cursor
+  
+    
+    
     cursor.execute('SELECT name from customers WHERE cid =? ;',(login_status[1],))
 
     data = cursor.fetchone()
@@ -440,9 +509,11 @@ def customer_functionality(login_status):
                     print("No session created.\n\n")
 
             elif option == 5:
-                print("Thank you for using our system.\nYou have logged out.")
+                print("Thank you for using our system.\n")
                 movies_currently_being_watched_list = []
                 #TODO: clear lists and variable deined intially
+                print("Logging out......")
+                login_status = ()
                 main()
             elif option == 6:
                 pass
@@ -581,7 +652,7 @@ def search_movies(cid,option):
             else:
                 print("Invalid.")
                 
-    
+
         output+=5
     if end is not True:
         print("\nDisplayed ALL movies corresponding to keyword provided.")
@@ -684,6 +755,7 @@ def create_db():
 
 def main():
     global run
+
     if run == 1:
         create_db()
         run = 0
@@ -693,13 +765,19 @@ def main():
     #print("H!")
     if login_status[0] == "Successful":
         #print("H@")
-        customer_functionality(login_status)
+        if login_status[1][0] == "c":
+            #print("TESTTT")
+            customer_functionality(login_status)
+        else:
+            editor_functionality(login_status)
+            main()
     # customer_functionality(["Successful",'c950'])
     
     #query_test()
 
 if __name__ == "__main__":
     main()
+
 
 
     # prj-test.db
