@@ -1,5 +1,10 @@
-#TODO: String matching. 
+# MINI PROJECT 1: CMPUT 291
+# This project is to build a system that keeps the enterprise data in a database and to provide services to users.
+# Code is entirely written in Python.
+# Group Members: Sriram Karthik Akella, Almer Muneer and Shreya Pekhale.
+# #TODO: String matching. 
 
+# Importing modules
 import sqlite3
 import getpass
 import random
@@ -17,9 +22,11 @@ run = 1
 index = -1
 
 def connect(path):
-    '''
-    connecting to the database.
-    '''
+    """
+    Function defined for connecting to the database.
+
+    """
+  
     global connection, cursor
 
     connection = sqlite3.connect(path)
@@ -28,14 +35,17 @@ def connect(path):
     connection.commit()
     return
 
-
-
 def read_data():
+    """
+    Reading data from filename. 
+    
+    """
+    
     file_name = input("Database: ")
     file = open(file_name)
     file_data = file.read()
     file.close()
-    #print(file_data)
+    
 
     global connection, cursor
     
@@ -49,6 +59,11 @@ def read_data():
     print("SUCCESSFULLY INSERTED DATA")
 
 def query_test():
+    """
+    Checking certain query tests for debugging purposes.
+    
+    """
+    
     global connection, cursor
     
 
@@ -65,6 +80,10 @@ def query_test():
     connection.commit()
 
 def login_reg_screen():
+    """
+    Function which is about the login screen for the system.
+
+    """
 
     global connection, cursor
 
@@ -188,6 +207,12 @@ def login_reg_screen():
         return ["Successful", new_id_input]
 
 def end_movie(type_end):
+    """
+    Function used to end the movie being watched currently by the user.
+    Parameters:
+    - type_end of type 'str' and can hold two possible values "some" or "all"
+
+    """
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
 
@@ -271,6 +296,12 @@ def end_movie(type_end):
         print("\nEnded all movies.\n")
 
 def editor_functionality(login_status):
+    """
+    Function responsible for the editor's tasks in the system.
+    Parameters:
+    - login_status of type 'str' 
+    """
+
     global connection, cursor
 
     print("\nWelcome, editor {}!".format(login_status[1]))
@@ -416,15 +447,21 @@ def editor_functionality(login_status):
     return
 
 def unique_data(data):
-    #print(data)
+    """
+    Checks if data in the list is unique or not.
+    Parameter:
+    - data of type list.
+
+    """
+   
     final_data = []
     for dat in data:
         if (dat[0],dat[1]) not in final_data and (dat[1],dat[0]) not in final_data :
             final_data.append((dat[0],dat[1],dat[2]))
-    #print(final_data)
+    
     
     for num in range(len(final_data)):
-        #tuple_movie = (final_data[num][0],final_data[num][1])
+        
         cursor.execute('''SELECT r.score from recommendations r WHERE r.watched =? AND r.recommended =?;''',(final_data[num][0],final_data[num][1],))
         data = cursor.fetchone()
         
@@ -467,6 +504,12 @@ def unique_data(data):
             print("Deleted Successfully!\n\n")
 # 74 .  220 / 130  || 1 have watched. || score = None || NOT IN RECOMMENDED
 def customer_functionality(login_status):
+    """
+    Function responsible for the customer's tasks in the system.
+    Parameters:
+    - login_status of type 'str' 
+    """
+
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
     global session_list
@@ -495,7 +538,7 @@ def customer_functionality(login_status):
             print("6. Exit;")
             option = int(input("\nOption: "))
     
-        #print("USER {} SELECTED OPTION {}".format(login_status[1],option))
+        
             if option == 1:
                 start_session(login_status[1])
                 
@@ -531,7 +574,7 @@ def customer_functionality(login_status):
             elif option == 5:
                 print("Thank you for using our system.\n")
                 movies_currently_being_watched_list = []
-                #TODO: clear lists and variable deined intially
+                
                 print("Logging out......\n\n")
                 login_status = ()
                 main()
@@ -543,6 +586,10 @@ def customer_functionality(login_status):
 
 
 def new_sid():
+    """
+    Function used to generate a new randon SID.
+
+    """
     global connection, cursor
     cursor.execute('SELECT sid from sessions;')
     data = cursor.fetchall()
@@ -565,6 +612,12 @@ def new_sid():
 
     return new_random_sid
 def start_session(cid):
+    """
+    Function used to start a new session in the system.
+    Paramters:
+    - cid of type 'str'
+
+    """
 
     # OPTION 1
     global connection, cursor
@@ -585,12 +638,25 @@ def start_session(cid):
     return new_random_sid
 
 def end_session(cid):
+    """
+    Function used to end a session in the system.
+    Paramters:
+    - cid of type 'str'
+
+    """
     time_watched = time.time()-time_dict[cid]
     minutes = time_watched // 60
     seconds = time_watched-(minutes*60)
     print("You have watched the movie for {} minutes {} seconds.".format(int(minutes),int(round(seconds,0))))
 
 def search_movies(cid,option):
+    """
+    Function used to search for movies in the system.
+    Paramters:
+    - cid of type 'str'
+    - option of type 'int'
+
+    """
     # search for movie based on keyword
     number_of_keywords = int(input("Number of keywords: "))
     # keyword = input("Keywords: ")
@@ -688,13 +754,17 @@ def search_movies(cid,option):
             print("Invalid.")
         
     
-    # dwayne p500 works
-    # morgan p100 lucy issue
+   
 
 def details(movie_name,cust_id):
-    # OPTION 2 contd. PT 2
-    # print("details func.")
-    # print(movie_name)
+    """
+    Function used to display the details of the customer.
+    Paramters:
+    - movie_name of type 'str'
+    - 'cust_id' of type 'str'
+
+    """
+    
 
     global connection, cursor
     global movies_currently_being_watched_list
@@ -763,6 +833,10 @@ def details(movie_name,cust_id):
         
 
 def create_db():
+    """
+    Function used to create a database and calling read data function to read data from a file.
+
+    """
     global connection, cursor
     path="./register.db"
     connect(path)
@@ -770,6 +844,10 @@ def create_db():
     read_data()
 
 def main():
+    """
+    Main function which calls certain functions which perform their required tasks.
+    
+    """
     global run
 
     if run == 1:
@@ -791,5 +869,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-    # prj-test.db
-    # a2-test-data.db
+    
