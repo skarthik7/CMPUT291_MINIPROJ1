@@ -433,19 +433,97 @@ def editor_functionality(login_status):
                 
 
                 no_of_cast_membets = int(input("How many cast members? "))
-
+                cast_members = []
                 for i in range(1,no_of_cast_membets+1):
+                    print("\nCAST MEMBER ", i)
                     cast_member_id = input("pid: ")
-                    cursor.execute('''SELECT name, birthYear from moviePeople where pid = ?''',(cast_member_id))
+                    cursor.execute('''SELECT name, birthYear from moviePeople where pid = ?''',(cast_member_id,))
+                    data = cursor.fetchone()
+                    if data is not None:
+                        print("\n")
+                        print(data[0], data[1])
+                        print("\n")
+                        appOrrej = input("Do you approve or reject the above cast member? (a/r)")
+                        if appOrrej == 'a':
+                            print("Approved")
+                            role = input("Role: ")
+                            cursor.execute('''insert into casts values (?,?,?); ''', (movie_id,cast_member_id,role,))
+                            connection.commit()
+                        elif appOrrej == 'r':
+                            print("Rejected")
+                    else:
+                        # ADDING THE CAST MEMBER
+                        print("\nYou are now adding this member to moviePeople.")
+                        #unique id, a name and a birth year.
+                        name = input("Name: ")
+                        birth_year = int(input("Birth Year: "))
+                        cursor.execute('''insert into moviePeople values (?,?,?); ''', (cast_member_id,name,birth_year,))
+                        connection.commit()
+                        role = input("Role: ")
+                        cursor.execute('''insert into casts values (?,?,?); ''', (movie_id,cast_member_id,role,))
+                        connection.commit()
             else:
                 print("\nMovie ID not unique.\n")
         elif option == 2:
             print("Selected to update a recommendation.")
+            user_input = input("Select monthly, yearly or all time report (m/y/a):")
+            if user_input.lower() == 'm':
+                cursor.execute('''SELECT t1.m1, t1.m2, COUNT(*)
+                                    FROM(
+                                    (
+                                    SELECT w1.mid as m1, w2.mid as m2, strftime('%m', s1.sdate) as month
+                                    FROM sessions s1, sessions s2, watch w1, watch w2
+                                    WHERE strftime('%m', s1.sdate) = strftime('%m', s2.sdate)
+                                    AND s1.cid = s2.cid
+                                    AND w1.sid = s1.sid
+                                    AND w2.sid = s2.sid
+                                    AND s1.sid < s2.sid
+                                    AND w1.mid != w2.mid -- <
+                                    ) t1
+                                    JOIN
+                                    (
+                                    SELECT r1.watched as watch, r1.recommended as recommend
+                                    FROM recommendations r1
+                                    GROUP BY watch
+                                    ) t2 ON (t2.watch = t1.m1 AND t2.recommend = t1.m2))
+                                    GROUP BY t1.month
+                                    ORDER BY COUNT(*) DESC;
+                                ''')
+                
+                data = cursor.fetchall()
+                unique_data(data)
+                
+            elif user_input.lower() == 'y':
+                cursor.execute('''SELECT w1.mid as m1, w2.mid as m2, strftime('%Y', s1.sdate) as month, COUNT(*)
+                                FROM sessions s1, sessions s2, watch w1, watch w2
+                                WHERE strftime('%Y', s1.sdate) = strftime('%Y', s2.sdate)
+                                AND s1.cid = s2.cid
+                                AND w1.sid = s1.sid
+                                AND w2.sid = s2.sid
+                                AND s1.sid < s2.sid
+                                AND w1.mid != w2.mid -- <
+                                GROUP BY strftime('%Y', s1.sdate), m1, m2
+                                ORDER BY COUNT(*) DESC;
+                                ''')
+                data = cursor.fetchall()
+                unique_data(data)
+
+            elif user_input.lower() == 'a':
+                pass
+            
         else:
-            bre
+            pass
 
     return
 
+def unique_data(data):
+    #print(data)
+    final_data = []
+    for dat in data:
+        if (dat[0],dat[1]) not in final_data and (dat[1],dat[0]) not in final_data :
+            final_data.append((dat[0],dat[1]))
+    print(final_data)
+    print(len(final_data))
 def customer_functionality(login_status):
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
