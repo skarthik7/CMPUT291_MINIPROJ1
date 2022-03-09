@@ -1,7 +1,7 @@
 # MINI PROJECT 1: CMPUT 291
 # This project is to build a system that keeps the enterprise data in a database and to provide services to users.
 # Code is entirely written in Python.
-# Group Members: Sriram Karthik Akella, Almer Muneer and Shreya Pekhale.
+# Group Members: Almer Muneer, Shreya Pekhale, Sriram Karthik Akella.
 # #TODO: String matching. 
 
 # Importing modules
@@ -245,7 +245,7 @@ def end_movie(type_end):
                 
 
         else: # more than 1 movie being watchd
-            print(movies_currently_being_watched_withStartTime_list)
+            #print(movies_currently_being_watched_withStartTime_list)
             for i in range (len(movies_currently_being_watched_withStartTime_list)):
                 print(i, ".", movies_currently_being_watched_withStartTime_list[i][0])
             
@@ -870,3 +870,4 @@ if __name__ == "__main__":
     main()
 
     
+
