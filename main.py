@@ -1,11 +1,19 @@
 import sqlite3
+from tkinter import N
 from venv import create
 import getpass
 import random
 from datetime import date
+import time
+
+time_dict = {} # cid as key, start time.time() as value
+session_list = [] #sid, start time
+movies_currently_being_watched_withStartTime_list = [] # each ele is of form (movie_name, start_time, sid)
+
 connection = None
 cursor = None
-
+run = 1
+index = -1 
 def connect(path):
     global connection, cursor
 
@@ -214,7 +222,8 @@ def login_reg_screen():
 
 
         if data[0] == pw_input:
-            print("CORRECT PASS")
+            print("CORRECT PASSWORD")
+            #print("H#")
             return ["Successful", id_input]
 
         else:
@@ -288,8 +297,93 @@ def login_reg_screen():
     
         return ["Successful", new_id_input]
 
-def customer_functionality(login_status):
+def end_movie(type_end):
+    global movies_currently_being_watched_list
+    global movies_currently_being_watched_withStartTime_list
 
+    global connection, cursor
+
+    if type_end == "some":
+
+        if len(movies_currently_being_watched_withStartTime_list) == 0:
+            print("You're currently not watching any movie. Select option 2 to start watching a movie.")
+
+        elif len(movies_currently_being_watched_withStartTime_list) == 1:
+            print("You are currently watching {}.".format(movies_currently_being_watched_withStartTime_list[0][0]))
+            time_watched = time.time()-movies_currently_being_watched_withStartTime_list[0][1]
+            minutes = time_watched // 60
+            seconds = time_watched-(minutes*60)
+            #print("HERE", seconds)
+            print("You have watched the movie {} for {} minutes {} seconds.".format(movies_currently_being_watched_withStartTime_list[0][0],int(minutes),int(round(seconds,0))))
+            #print(movies_currently_being_watched_withStartTime_list)
+
+            cursor.execute('''SELECT runtime FROM movies WHERE title = ?;''',(movies_currently_being_watched_withStartTime_list[0][0],))
+            data = cursor.fetchone()
+            movie_runtime = data[0]
+            if movie_runtime < minutes:
+                print("Duration exceeded movie runtime. Setting duration to movie runtime.\nEnding Movie.")
+                minutes = movie_runtime
+            cursor.execute('''UPDATE watch SET duration = ? WHERE sid = ? AND duration = 0;''',(int(minutes), movies_currently_being_watched_withStartTime_list[0][2],))
+            connection.commit()
+            movies_currently_being_watched_withStartTime_list = []
+
+                
+
+        else: # more than 1 movie being watchd
+            print(movies_currently_being_watched_withStartTime_list)
+            for i in range (len(movies_currently_being_watched_withStartTime_list)):
+                print(i, ".", movies_currently_being_watched_withStartTime_list[i][0])
+            
+
+            end_movie_option_input = int(input("Which movie do you want to end? "))
+            time_watched = time.time()-movies_currently_being_watched_withStartTime_list[end_movie_option_input][1]
+            minutes = time_watched // 60
+            seconds = time_watched-(minutes*60)
+            #print("HERE", seconds)
+            print("You have watched the movie {} for {} minutes {} seconds.".format(movies_currently_being_watched_withStartTime_list[0][0],int(minutes),int(round(seconds,0))))
+            cursor.execute('''SELECT runtime FROM movies WHERE title = ?;''',(movies_currently_being_watched_withStartTime_list[0][0],))
+            data = cursor.fetchone()
+            movie_runtime = data[0]
+            if movie_runtime < minutes:
+                print("Duration exceeded movie runtime. Setting duration to movie runtime.\nEnding Movie.")
+                minutes = movie_runtime
+
+            cursor.execute('''UPDATE watch SET duration = ? WHERE sid = ? AND duration = 0;''',(int(minutes), movies_currently_being_watched_withStartTime_list[i][2],))
+            connection.commit()
+            
+            movies_currently_being_watched_withStartTime_list.pop(end_movie_option_input)
+    else:
+        #for movie_number_for_loop in range (0,len(movies_currently_being_watched_withStartTime_list)):
+        while len(movies_currently_being_watched_withStartTime_list) != 0:
+            #print(movies_currently_being_watched_withStartTime_list)
+            for i in range (0,len(movies_currently_being_watched_withStartTime_list)):
+                print(i, ". ", movies_currently_being_watched_withStartTime_list[i][0])
+            
+            #end_movie_option_input = int(input("Which movie do you want to end? "))
+            #end_movie_option_input = movie_number_for_loop
+            end_movie_option_input = 0
+            time_watched = time.time()-movies_currently_being_watched_withStartTime_list[end_movie_option_input][1]
+            minutes = time_watched // 60
+            seconds = time_watched-(minutes*60)
+            #print("HERE", seconds)
+            print("\nYou have watched the movie {} for {} minutes {} seconds.".format(movies_currently_being_watched_withStartTime_list[i][0],int(minutes),int(round(seconds,0))))
+            cursor.execute('''SELECT runtime FROM movies WHERE title = ?;''',(movies_currently_being_watched_withStartTime_list[0][0],))
+            data = cursor.fetchone()
+            movie_runtime = data[0]
+            if movie_runtime < minutes:
+                print("Duration exceeded movie runtime. Setting duration to movie runtime.\nEnding Movie.")
+                minutes = movie_runtime
+
+            cursor.execute('''UPDATE watch SET duration = ? WHERE sid = ? AND duration = 0;''',(int(minutes), movies_currently_being_watched_withStartTime_list[i][2],))
+            connection.commit()
+            
+            movies_currently_being_watched_withStartTime_list.pop(end_movie_option_input)
+        print("\nEnded all movies.\n")
+
+def customer_functionality(login_status):
+    global movies_currently_being_watched_list
+    global movies_currently_being_watched_withStartTime_list
+    global session_list
     global connection, cursor
     cursor.execute('SELECT name from customers WHERE cid =? ;',(login_status[1],))
 
@@ -300,18 +394,16 @@ def customer_functionality(login_status):
 
     if login_status[0] == "Successful":
 
-        
-
-        
 
         option = 0
-        while option != 5:
-            print("\nSELECT one OF THE FOLLOWING:")
+        while option != 6:
+            print("SELECT one OF THE FOLLOWING:")
             print("1. Start a session")
             print("2. Search for movies")
             print("3. End watching a movie")
             print("4. End the session")
-            print("5. Exit;")
+            print("5. Logout;")
+            print("6. Exit;")
             option = int(input("\nOption: "))
     
         #print("USER {} SELECTED OPTION {}".format(login_status[1],option))
@@ -322,20 +414,44 @@ def customer_functionality(login_status):
                 search_movies(login_status[1],option)
                 
             elif option == 3:
-                pass
+                print("You've chosen to end the movie.")
+                end_movie("some")
+                
+
             elif option == 4:
-                pass
+                # 1. end latest session
+                # 2. update duration for all movies started
+                
+                if len(session_list) > 0:
+                    end_movie("all") #ending all movies created in session.
+                    session_sid = session_list[-1][0]
+                    session_time = session_list[-1][1]
+
+
+                    session_duration = time.time()-session_time
+                    minutes = session_duration // 60
+                    seconds = session_duration-(minutes*60)
+
+                    print("You were in this session (sid: {}) for {} minutes {} seconds.".format(session_sid,int(round(minutes)),int(round(seconds))))
+                    cursor.execute('''UPDATE sessions SET duration = ? WHERE sid = ?;''',(int(minutes),session_sid,))
+                    connection.commit()
+                    session_list.pop(-1)
+                else:
+                    print("No session created.\n\n")
+
             elif option == 5:
-                print("Thank you for using our system.")
+                print("Thank you for using our system.\nYou have logged out.")
+                movies_currently_being_watched_list = []
+                #TODO: clear lists and variable deined intially
+                main()
+            elif option == 6:
+                pass
             else:
                 print("INVALID OPTION. Re-enter below.\n")
 
-def start_session(cid):
 
-    # OPTION 1
+def new_sid():
     global connection, cursor
-
-    # new session
     cursor.execute('SELECT sid from sessions;')
     data = cursor.fetchall()
     sids = []
@@ -353,13 +469,34 @@ def start_session(cid):
     while new_random_sid in sids:
         new_random_sid = random.randint(first_sid,last_sid)
 
+    
+
+    return new_random_sid
+def start_session(cid):
+
+    # OPTION 1
+    global connection, cursor
+
+    # new session
+
+    new_random_sid = new_sid()
+    
     print("New Randomly generated SID is", new_random_sid,".\n")
     todays_date = date.today()
 
     cursor.execute('''insert into sessions values (?,?,?,NULL); ''', (new_random_sid,cid,todays_date))
     connection.commit()
 
-    return
+    session_list.append((new_random_sid,time.time()))
+
+    
+    return new_random_sid
+
+def end_session(cid):
+    time_watched = time.time()-time_dict[cid]
+    minutes = time_watched // 60
+    seconds = time_watched-(minutes*60)
+    print("You have watched the movie for {} minutes {} seconds.".format(int(minutes),int(round(seconds,0))))
 
 def search_movies(cid,option):
     # search for movie based on keyword
@@ -422,8 +559,8 @@ def search_movies(cid,option):
             output += 1
         more = True
     serial = 6
-    end = False
-    while output < len(results):
+    end = False 
+    while output < len(results) and end is False:
         next_option= input("\nSelect a movie (1-{}) or more (m): ".format(serial-1))
         if next_option.lower() == 'm':
             if more is False:
@@ -459,7 +596,7 @@ def search_movies(cid,option):
         
         
         
-
+    
     # dwayne p500 works
     # morgan p100 lucy issue
 
@@ -469,7 +606,8 @@ def details(movie_name,cust_id):
     # print(movie_name)
 
     global connection, cursor
-
+    global movies_currently_being_watched_list
+    global index
 
     cursor.execute('''SELECT mp.name FROM movies m, moviePeople mp, casts c WHERE mp.pid = c.pid AND m.mid = c.mid AND m.title = ?;''',(movie_name,))
 
@@ -511,24 +649,50 @@ def details(movie_name,cust_id):
             print("You already follow {}.".format(data1[cast_member_choice-1][0]))
     
     elif choice == 2:
+        # start watching the movie
+        cursor.execute('''SELECT mid from movies where title = ?;''',(movie_name,))
+        movie_mid = cursor.fetchone()
+        #print(movie_mid)
         print("\nYou chose to watch the movie {}.".format(movie_name))
-    
+        
+        #new_random_sid = new_sid()
+        #new_random_sid = start_session(cust_id)
+        if len(session_list) > 0:
+            try:
+                new_random_sid = session_list[index][0]
+                index -= 1
+                print("The sid is: {}. ".format(new_random_sid))
+                cursor.execute('''insert into watch values (?, ?, ?, 0);''',(new_random_sid,cust_id,movie_mid[0],))
+                #cursor.execute('''insert into customers values (?,?,?); ''', (new_id_input,name_input,new_pw_input,)) 
+                time_rn = time.time()
+                time_dict[cust_id] = time_rn
+                movies_currently_being_watched_withStartTime_list.append((movie_name, time_rn, new_random_sid))
+                connection.commit()
+            except IndexError:
+                print("ERROR: Create session.")
+            
+        else:
+            print("ERROR: A SESSION NEEDS TO BE STARTED INORDER TO WATCH A MOVIE.")
+        
 
-        connection.commit()
-
-
-def main():
+def create_db():
     global connection, cursor
-
     path="./register.db"
     connect(path)
     create_tables()
     read_data()
 
+def main():
+    global run
+    if run == 1:
+        create_db()
+        run = 0
     #query_test()
 
     login_status = login_reg_screen()
+    #print("H!")
     if login_status[0] == "Successful":
+        #print("H@")
         customer_functionality(login_status)
     # customer_functionality(["Successful",'c950'])
     
