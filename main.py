@@ -17,6 +17,9 @@ run = 1
 index = -1
 
 def connect(path):
+    '''
+    connecting to the database.
+    '''
     global connection, cursor
 
     connection = sqlite3.connect(path)
@@ -65,26 +68,26 @@ def login_reg_screen():
 
     global connection, cursor
 
-    print("Hello!")
+    print("\nHello!\n")
 
     id_input = ' '
     run = 0
-    while id_input[0] not in ['c','e']:
+    while id_input[0] not in ['c','e','C','E']:
         id_input = input("ID: ")
         run+=1
-        if run != 0 and id_input[0] not in ['c','e']:
+        if run != 0 and id_input[0] not in ['c','e','C','E']:
             print("INVALID ID provided")
    
     
-    if id_input[0] == 'c':
+    if id_input[0] == 'c' or id_input[0] == 'C':
         cursor.execute('SELECT * from customers;') 
         data = cursor.fetchall()
-    elif id_input[0] == 'e':
+    elif id_input[0] == 'e' or id_input[0] == 'E':
         cursor.execute('SELECT * from editors;') 
         data = cursor.fetchall()
 
     for sublist in data:
-        if id_input == sublist[0]:
+        if id_input.lower() == sublist[0]:
             user_type = "EXISTING USER"
             break
         else:
@@ -92,12 +95,12 @@ def login_reg_screen():
     print(user_type)
     if user_type == "EXISTING USER":
         
-        if id_input[0] == 'e':
-            cursor.execute('SELECT pwd from editors WHERE eid = ?', (id_input,))
+        if id_input[0] == 'e' or id_input[0] == 'E':
+            cursor.execute('SELECT pwd from editors WHERE eid = ?', (id_input.lower(),))
             data = cursor.fetchone()
 
-        elif id_input[0] == 'c':
-            cursor.execute('SELECT pwd from customers WHERE cid = ?', (id_input,)) 
+        elif id_input[0] == 'c' or id_input[0] == 'C':
+            cursor.execute('SELECT pwd from customers WHERE cid = ?', (id_input.lower(),)) 
             data = cursor.fetchone()
         correct = False
         incorrect_tries = 0
@@ -105,11 +108,11 @@ def login_reg_screen():
             pw_input = getpass.getpass("Password: ")
         
             if data[0] == pw_input:
-                print("CORRECT PASSWORD")
+                print("\nCORRECT PASSWORD\n\nUSER VALIDATED\n")
                 #print("H#")
                 correct = True
                 #print(id_input)
-                return ["Successful", id_input]
+                return ["Successful", id_input.lower()]
 
             else:
                 print('INCORRECT PASSWORD. {} tries remaining.'.format(2-incorrect_tries))
@@ -119,13 +122,13 @@ def login_reg_screen():
                 if incorrect_tries == 3:
                     print("\nLogin failed.\n")
                     #print(new_id_input)
-                    return ["Not Successful", id_input]
+                    return ["Not Successful", id_input.lower()]
             connection.commit()
 
     else:
         print("\nCreating NEW account.\n")
         type_input = input("Customer or Editor (enter c/e): ")
-        if type_input== 'c':
+        if type_input== 'c' or type_input == 'C':
 
             unique = False
 
@@ -154,7 +157,7 @@ def login_reg_screen():
             except sqlite3.Error as e:
                 print(e)
 
-        elif type_input == 'e':
+        elif type_input == 'e' or type_input == 'E':
             unique = False
 
             cursor.execute('SELECT * from editors;') 
@@ -400,6 +403,7 @@ def unique_data(data):
             final_data.append((dat[0],dat[1]))
     print(final_data)
     print(len(final_data))
+    
 def customer_functionality(login_status):
     global movies_currently_being_watched_list
     global movies_currently_being_watched_withStartTime_list
@@ -412,7 +416,7 @@ def customer_functionality(login_status):
 
     data = cursor.fetchone()
 
-    print("\nWelcome, {}!".format(data[0]))
+    print("\nWelcome, {}!\n".format(data[0]))
     connection.commit()
 
     if login_status[0] == "Successful":
@@ -466,7 +470,7 @@ def customer_functionality(login_status):
                 print("Thank you for using our system.\n")
                 movies_currently_being_watched_list = []
                 #TODO: clear lists and variable deined intially
-                print("Logging out......")
+                print("Logging out......\n\n")
                 login_status = ()
                 main()
             elif option == 6:
@@ -554,21 +558,22 @@ def search_movies(cid,option):
     results = []
     # print(data1)
     # print(data2)
+
     for dat1 in data1:
         for da1 in dat1:
-            
             if da1 is not []:
                 results.append(da1)
     for dat2 in data2:
         for da2 in dat2:
-            
             if da2 is not []:
                 results.append(da2)
 
     number = 1
     output = 0
     
-    
+
+    results = list(set(results))
+
     if len(results) <= 5:
         for result in results:
             print("{}. {}, {}, {}".format(number,result[0],result[1],result[2]))
@@ -619,8 +624,6 @@ def search_movies(cid,option):
         else:
             print("Invalid.")
         
-        
-        
     
     # dwayne p500 works
     # morgan p100 lucy issue
@@ -661,9 +664,7 @@ def details(movie_name,cust_id):
 
         mp_pid = cursor.fetchall()
 
-        # cursor.execute('''INSERT into follows values ?, ?;''',(cust_id,mp_pid,))
         try:
-            #cursor.execute("INSERT INTO follows (cid, pid) VALUES "+ "({}, {});".format(str(cust_id),mp_pid[0][0]))
             cursor.execute("""
                     INSERT INTO follows(cid,pid)
                     VALUES (?,?)
@@ -677,18 +678,16 @@ def details(movie_name,cust_id):
         # start watching the movie
         cursor.execute('''SELECT mid from movies where title = ?;''',(movie_name,))
         movie_mid = cursor.fetchone()
-        #print(movie_mid)
+       
         print("\nYou chose to watch the movie {}.".format(movie_name))
         
-        #new_random_sid = new_sid()
-        #new_random_sid = start_session(cust_id)
+        
         if len(session_list) > 0:
             try:
                 new_random_sid = session_list[index][0]
                 index -= 1
                 print("The sid is: {}. ".format(new_random_sid))
                 cursor.execute('''insert into watch values (?, ?, ?, 0);''',(new_random_sid,cust_id,movie_mid[0],))
-                #cursor.execute('''insert into customers values (?,?,?); ''', (new_id_input,name_input,new_pw_input,)) 
                 time_rn = time.time()
                 time_dict[cust_id] = time_rn
                 movies_currently_being_watched_withStartTime_list.append((movie_name, time_rn, new_random_sid))
@@ -713,7 +712,7 @@ def main():
     if run == 1:
         create_db()
         run = 0
-    #query_test()
+    
 
     login_status = login_reg_screen()
   
@@ -724,14 +723,10 @@ def main():
         else:
             editor_functionality(login_status)
             main()
-    # customer_functionality(["Successful",'c950'])
     
-    #query_test()
 
 if __name__ == "__main__":
     main()
-
-
 
     # prj-test.db
     # a2-test-data.db
