@@ -1,22 +1,21 @@
 #TODO: String matching. 
 
 import sqlite3
-from tkinter import N
-from venv import create
 import getpass
 import random
 from datetime import date
 import time
+import create_table as ct
 
 time_dict = {} # cid as key, start time.time() as value
 session_list = [] #sid, start time
 movies_currently_being_watched_withStartTime_list = [] # each ele is of form (movie_name, start_time, sid)
-
-
+ 
 connection = None
 cursor = None
 run = 1
-index = -1 
+index = -1
+
 def connect(path):
     global connection, cursor
 
@@ -26,129 +25,6 @@ def connect(path):
     connection.commit()
     return
 
-def create_tables():
-    # watch(sid, cid, mid, duration)
-    # follows(cid, pid)
-    # editors(eid, pwd)
-
-    global connection, cursor
-    
-    cursor.executescript('''drop table if exists editors;
-                            drop table if exists follows;
-                            drop table if exists watch;
-                            drop table if exists sessions;
-                            drop table if exists customers;
-                            drop table if exists recommendations;
-                            drop table if exists casts;
-                            drop table if exists movies;
-                            drop table if exists moviePeople;''' )
-
-    cursor.execute('''PRAGMA foreign_keys = ON;''')
-
-    moviePeople_query = '''
-                        create table moviePeople (
-                        pid		char(4),
-                        name		text,
-                        birthYear	int,
-                        primary key (pid)
-                        );
-    '''
-
-    movies_query = '''
-                create table movies (
-                    mid		int,
-                    title		text,
-                    year		int,
-                    runtime	int,
-                    primary key (mid)
-                );
-    '''
-
-    casts_query = '''
-                create table casts (
-                        mid		int,
-                        pid		char(4),
-                        role		text,
-                        primary key (mid,pid),
-                        foreign key (mid) references movies,
-                        foreign key (pid) references moviePeople
-                );
-    
-    '''
-
-    recommendations_query = '''
-                    create table recommendations (
-                            watched    int,
-                            recommended    int,                              
-                            score float,
-                            primary key (watched,recommended),
-                            foreign key (watched) references movies,
-                            foreign key (recommended) references movies
-                    );
-
-    '''
-    customers_query = '''
-                    create table customers (
-                            cid    char(4),
-                            name text,
-                            pwd    text,
-                            primary key (cid)
-                    );
-    '''
-    sessions_query = '''
-                    create table sessions (
-                            sid    int,
-                            cid        char(4),
-                            sdate        date,
-                            duration    int,
-                            primary key (sid,cid),
-                            foreign key (cid) references customers on delete cascade
-                    );
-
-    '''
-
-
-    watch_query = '''
-                create table watch (
-                        sid		int,
-                        cid		char(4),
-                        mid		int,
-                        duration	int,
-                        primary key (sid,cid,mid),
-                        foreign key (sid,cid) references sessions,
-                        foreign key (mid) references movies
-                );
-    '''
-
-    follows_query = '''
-                    create table follows (
-                        cid		char(4),
-                        pid		char(4),
-                        primary key (cid,pid),
-                        foreign key (cid) references customers,
-                        foreign key (pid) references moviePeople
-                    );
-    '''
-
-    editors_query = '''
-                    create table editors (
-                        eid		char(4),
-                        pwd		text,
-                        primary key (eid)
-                    );
-    '''
-    
-    cursor.execute(moviePeople_query)
-    cursor.execute(movies_query)
-    cursor.execute(casts_query)
-    cursor.execute(recommendations_query)
-    cursor.execute(customers_query)
-    cursor.execute(sessions_query)
-    cursor.execute(watch_query)
-    cursor.execute(follows_query)
-    cursor.execute(editors_query)
-    
-    print("SUCCESSFULLY CREATED TABLES")
 
 
 def read_data():
@@ -828,7 +704,7 @@ def create_db():
     global connection, cursor
     path="./register.db"
     connect(path)
-    create_tables()
+    ct.create_tables(connection,cursor)
     read_data()
 
 def main():
@@ -840,11 +716,10 @@ def main():
     #query_test()
 
     login_status = login_reg_screen()
-    #print("H!")
+  
     if login_status[0] == "Successful":
-        #print("H@")
+
         if login_status[1][0] == "c":
-            #print("TESTTT")
             customer_functionality(login_status)
         else:
             editor_functionality(login_status)
